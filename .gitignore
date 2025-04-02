@@ -1,0 +1,12 @@
+incident
+incident-cli
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+vendor/
+.incident.yaml
+postmortems/
