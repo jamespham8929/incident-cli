@@ -1,0 +1,51 @@
+[
+  {
+    "id": "dep-checkout-4821",
+    "source": "deploy",
+    "service": "checkout",
+    "title": "checkout v4821: refactor payment retry logic",
+    "timestamp": "2026-01-15T11:52:00Z",
+    "magnitude": 0.7,
+    "metadata": { "commit": "a1b2c3d", "files_changed": "14" }
+  },
+  {
+    "id": "alert-auth-1",
+    "source": "alert",
+    "service": "auth",
+    "title": "auth latency p99 above 800ms",
+    "timestamp": "2026-01-15T11:58:00Z",
+    "magnitude": 0.5
+  },
+  {
+    "id": "dep-search-2207",
+    "source": "deploy",
+    "service": "search",
+    "title": "search v2207: bump elasticsearch client",
+    "timestamp": "2026-01-15T11:40:00Z",
+    "magnitude": 0.5
+  },
+  {
+    "id": "cfg-checkout-991",
+    "source": "config_change",
+    "service": "checkout",
+    "title": "checkout: raise DB connection pool to 200",
+    "timestamp": "2026-01-15T10:50:00Z",
+    "magnitude": 0.6
+  },
+  {
+    "id": "scale-billing-1",
+    "source": "scaling",
+    "service": "billing",
+    "title": "billing scaled 6 to 3 replicas (off-peak)",
+    "timestamp": "2026-01-15T11:30:00Z",
+    "magnitude": 0.4
+  },
+  {
+    "id": "flag-catalog-1",
+    "source": "feature_flag",
+    "service": "catalog",
+    "title": "catalog: enabled new ranking experiment",
+    "timestamp": "2026-01-15T11:20:00Z",
+    "magnitude": 0.3
+  }
+]
