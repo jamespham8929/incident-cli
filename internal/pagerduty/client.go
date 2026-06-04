@@ -23,6 +23,7 @@ type Incident struct {
 	ID         string
 	Title      string
 	Severity   string
+	Service    string
 	URL        string
 	CreatedAt  time.Time
 	ResolvedAt time.Time
@@ -54,7 +55,7 @@ func (c *Client) CreateIncident(input CreateIncidentInput) (*Incident, error) {
 	}
 
 	return &Incident{
-		ID:       resp.Id,
+		ID:       resp.ID,
 		Title:    resp.Title,
 		Severity: input.Severity,
 		URL:      resp.HTMLURL,
@@ -84,12 +85,40 @@ func (c *Client) GetIncident(id string) (*Incident, error) {
 	}
 
 	return &Incident{
-		ID:         resp.Id,
+		ID:         resp.ID,
 		Title:      resp.Title,
 		URL:        resp.HTMLURL,
 		CreatedAt:  createdAt,
 		ResolvedAt: resolvedAt,
 	}, nil
+}
+
+// ListRecentIncidents returns incidents created at or after `since`, newest
+// first. The timeline package turns these into candidate events, since a burst
+// of related alerts just before a page is often the first visible symptom.
+func (c *Client) ListRecentIncidents(since time.Time) ([]Incident, error) {
+	resp, err := c.client.ListIncidents(pd.ListIncidentsOptions{
+		Since:    since.UTC().Format(time.RFC3339),
+		SortBy:   "created_at:desc",
+		Limit:    100,
+		Statuses: []string{"triggered", "acknowledged", "resolved"},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("PagerDuty API error: %w", err)
+	}
+
+	out := make([]Incident, 0, len(resp.Incidents))
+	for _, inc := range resp.Incidents {
+		createdAt, _ := time.Parse(time.RFC3339, inc.CreatedAt)
+		out = append(out, Incident{
+			ID:        inc.ID,
+			Title:     inc.Title,
+			Service:   inc.Service.Summary,
+			URL:       inc.HTMLURL,
+			CreatedAt: createdAt,
+		})
+	}
+	return out, nil
 }
 
 func severityToUrgency(severity string) string {
