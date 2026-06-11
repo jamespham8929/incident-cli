@@ -30,6 +30,7 @@ func init() {
 	rootCmd.AddCommand(createCmd)
 	rootCmd.AddCommand(resolveCmd)
 	rootCmd.AddCommand(listCmd)
+	rootCmd.AddCommand(investigateCmd)
 	rootCmd.AddCommand(postmortemCmd)
 }
 
