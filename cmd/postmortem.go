@@ -26,14 +26,14 @@ func init() {
 }
 
 type postmortemData struct {
-	IncidentID   string
-	Title        string
-	Severity     string
-	DeclaredAt   string
-	ResolvedAt   string
-	MTTR         string
-	Date         string
-	Author       string
+	IncidentID string
+	Title      string
+	Severity   string
+	DeclaredAt string
+	ResolvedAt string
+	MTTR       string
+	Date       string
+	Author     string
 }
 
 const defaultTemplate = `# Post-Mortem: {{ .Title }}
