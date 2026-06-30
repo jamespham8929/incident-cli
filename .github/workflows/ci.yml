@@ -19,7 +19,19 @@ jobs:
       - name: Vet
         run: go vet ./...
       - name: Test
-        run: go test ./... -race
+        run: go test ./... -race -coverprofile=coverage.out -covermode=atomic
+      - name: Enforce coverage threshold
+        env:
+          THRESHOLD: "60"
+        run: |
+          total=$(go tool cover -func=coverage.out | awk '/^total:/ {print $3}' | tr -d '%')
+          echo "Total coverage: ${total}% (threshold ${THRESHOLD}%)"
+          if awk -v t="$total" -v min="$THRESHOLD" 'BEGIN { exit (t < min) ? 1 : 0 }'; then
+            echo "Coverage check passed"
+          else
+            echo "Coverage ${total}% is below the ${THRESHOLD}% threshold"
+            exit 1
+          fi
 
   lint:
     name: Lint
