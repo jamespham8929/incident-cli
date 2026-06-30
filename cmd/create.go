@@ -5,24 +5,23 @@ import (
 	"time"
 
 	"github.com/jamespham/incident-cli/internal/pagerduty"
-	"github.com/jamespham/incident-cli/internal/slack"
 	"github.com/jamespham/incident-cli/internal/timer"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-var createCmd = &cobra.Command{
-	Use:   "create",
-	Short: "Declare a new incident",
-	Long:  `Creates a PagerDuty incident, opens a Slack bridge channel, and starts the MTTR timer.`,
-	RunE:  runCreate,
-}
-
-func init() {
-	createCmd.Flags().String("title", "", "Incident title (required)")
-	createCmd.Flags().String("severity", "P2", "Severity level: P1, P2, P3, P4")
-	createCmd.Flags().String("description", "", "Additional context for responders")
-	_ = createCmd.MarkFlagRequired("title")
+func newCreateCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "create",
+		Short: "Declare a new incident",
+		Long:  `Creates a PagerDuty incident, opens a Slack bridge channel, and starts the MTTR timer.`,
+		RunE:  runCreate,
+	}
+	cmd.Flags().String("title", "", "Incident title (required)")
+	cmd.Flags().String("severity", "P2", "Severity level: P1, P2, P3, P4")
+	cmd.Flags().String("description", "", "Additional context for responders")
+	_ = cmd.MarkFlagRequired("title")
+	return cmd
 }
 
 func runCreate(cmd *cobra.Command, args []string) error {
@@ -30,8 +29,8 @@ func runCreate(cmd *cobra.Command, args []string) error {
 	severity, _ := cmd.Flags().GetString("severity")
 	description, _ := cmd.Flags().GetString("description")
 
-	pdClient := pagerduty.NewClient(viper.GetString("PAGERDUTY_API_KEY"))
-	slackClient := slack.NewClient(viper.GetString("SLACK_BOT_TOKEN"))
+	pdClient := newPagerDutyClient(viper.GetString("PAGERDUTY_API_KEY"))
+	slackClient := newSlackClient(viper.GetString("SLACK_BOT_TOKEN"))
 	t := timer.NewMTTRTimer()
 
 	fmt.Printf("Declaring %s incident: %q\n", severity, title)

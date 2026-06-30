@@ -10,15 +10,27 @@ import (
 
 var cfgFile string
 
-var rootCmd = &cobra.Command{
-	Use:   "incident",
-	Short: "Incident management CLI for on-call engineers",
-	Long: `incident-cli automates incident declaration, Slack channel creation,
+// newRootCmd builds the root command and wires up every subcommand. Each
+// command is constructed fresh so that flag state never leaks between
+// invocations, which keeps the commands testable in isolation.
+func newRootCmd() *cobra.Command {
+	root := &cobra.Command{
+		Use:   "incident",
+		Short: "Incident management CLI for on-call engineers",
+		Long: `incident-cli automates incident declaration, Slack channel creation,
 MTTR tracking, and post-mortem generation.`,
+	}
+	root.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default: $HOME/.incident.yaml)")
+	root.AddCommand(newCreateCmd())
+	root.AddCommand(newResolveCmd())
+	root.AddCommand(newListCmd())
+	root.AddCommand(newInvestigateCmd())
+	root.AddCommand(newPostmortemCmd())
+	return root
 }
 
 func Execute() {
-	if err := rootCmd.Execute(); err != nil {
+	if err := newRootCmd().Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
@@ -26,12 +38,6 @@ func Execute() {
 
 func init() {
 	cobra.OnInitialize(initConfig)
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default: $HOME/.incident.yaml)")
-	rootCmd.AddCommand(createCmd)
-	rootCmd.AddCommand(resolveCmd)
-	rootCmd.AddCommand(listCmd)
-	rootCmd.AddCommand(investigateCmd)
-	rootCmd.AddCommand(postmortemCmd)
 }
 
 func initConfig() {

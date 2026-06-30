@@ -12,23 +12,23 @@ import (
 	"github.com/spf13/viper"
 )
 
-var investigateCmd = &cobra.Command{
-	Use:   "investigate",
-	Short: "Reconstruct an incident timeline and rank the most likely causes",
-	Long: `Gathers candidate events (deploys, config changes, scaling, related alerts)
+func newInvestigateCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "investigate",
+		Short: "Reconstruct an incident timeline and rank the most likely causes",
+		Long: `Gathers candidate events (deploys, config changes, scaling, related alerts)
 from the configured sources within a lookback window, reconstructs the timeline,
 and ranks which events most likely caused the incident.`,
-	RunE: runInvestigate,
-}
-
-func init() {
-	investigateCmd.Flags().String("service", "", "Affected service (required)")
-	investigateCmd.Flags().String("at", "now", "Incident detection time (RFC3339 or 'now')")
-	investigateCmd.Flags().Duration("window", 2*time.Hour, "Lookback window for candidate causes")
-	investigateCmd.Flags().StringSlice("events", nil, "Path(s) to JSON event files")
-	investigateCmd.Flags().Bool("pagerduty", false, "Also pull recent PagerDuty alerts as events")
-	investigateCmd.Flags().Int("top", 3, "Number of candidate causes to highlight")
-	_ = investigateCmd.MarkFlagRequired("service")
+		RunE: runInvestigate,
+	}
+	cmd.Flags().String("service", "", "Affected service (required)")
+	cmd.Flags().String("at", "now", "Incident detection time (RFC3339 or 'now')")
+	cmd.Flags().Duration("window", 2*time.Hour, "Lookback window for candidate causes")
+	cmd.Flags().StringSlice("events", nil, "Path(s) to JSON event files")
+	cmd.Flags().Bool("pagerduty", false, "Also pull recent PagerDuty alerts as events")
+	cmd.Flags().Int("top", 3, "Number of candidate causes to highlight")
+	_ = cmd.MarkFlagRequired("service")
+	return cmd
 }
 
 func runInvestigate(cmd *cobra.Command, args []string) error {

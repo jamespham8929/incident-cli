@@ -6,23 +6,22 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/jamespham/incident-cli/internal/pagerduty"
 	"github.com/jamespham/incident-cli/internal/timer"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-var postmortemCmd = &cobra.Command{
-	Use:   "postmortem",
-	Short: "Generate a post-mortem document for a resolved incident",
-	RunE:  runPostmortem,
-}
-
-func init() {
-	postmortemCmd.Flags().String("id", "", "Incident ID (required)")
-	postmortemCmd.Flags().String("output", "", "Output file path (default: stdout)")
-	postmortemCmd.Flags().String("template", "", "Custom template file (optional)")
-	_ = postmortemCmd.MarkFlagRequired("id")
+func newPostmortemCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "postmortem",
+		Short: "Generate a post-mortem document for a resolved incident",
+		RunE:  runPostmortem,
+	}
+	cmd.Flags().String("id", "", "Incident ID (required)")
+	cmd.Flags().String("output", "", "Output file path (default: stdout)")
+	cmd.Flags().String("template", "", "Custom template file (optional)")
+	_ = cmd.MarkFlagRequired("id")
+	return cmd
 }
 
 type postmortemData struct {
@@ -97,7 +96,7 @@ func runPostmortem(cmd *cobra.Command, args []string) error {
 	output, _ := cmd.Flags().GetString("output")
 	templateFile, _ := cmd.Flags().GetString("template")
 
-	pdClient := pagerduty.NewClient(viper.GetString("PAGERDUTY_API_KEY"))
+	pdClient := newPagerDutyClient(viper.GetString("PAGERDUTY_API_KEY"))
 	t := timer.NewMTTRTimer()
 	t.Load(id)
 

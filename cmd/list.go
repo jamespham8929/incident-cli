@@ -6,24 +6,23 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/jamespham/incident-cli/internal/pagerduty"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-var listCmd = &cobra.Command{
-	Use:   "list",
-	Short: "List recent incidents",
-	RunE:  runList,
-}
-
-func init() {
-	listCmd.Flags().Duration("since", 24*time.Hour, "How far back to list incidents")
+func newListCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "list",
+		Short: "List recent incidents",
+		RunE:  runList,
+	}
+	cmd.Flags().Duration("since", 24*time.Hour, "How far back to list incidents")
+	return cmd
 }
 
 func runList(cmd *cobra.Command, args []string) error {
 	since, _ := cmd.Flags().GetDuration("since")
-	client := pagerduty.NewClient(viper.GetString("PAGERDUTY_API_KEY"))
+	client := newPagerDutyClient(viper.GetString("PAGERDUTY_API_KEY"))
 
 	incidents, err := client.ListRecentIncidents(time.Now().Add(-since))
 	if err != nil {

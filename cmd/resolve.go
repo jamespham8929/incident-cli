@@ -4,31 +4,29 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jamespham/incident-cli/internal/pagerduty"
-	"github.com/jamespham/incident-cli/internal/slack"
 	"github.com/jamespham/incident-cli/internal/timer"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-var resolveCmd = &cobra.Command{
-	Use:   "resolve",
-	Short: "Resolve an active incident and record MTTR",
-	RunE:  runResolve,
-}
-
-func init() {
-	resolveCmd.Flags().String("id", "", "Incident ID to resolve (required)")
-	resolveCmd.Flags().String("resolution", "", "Brief description of how the incident was resolved")
-	_ = resolveCmd.MarkFlagRequired("id")
+func newResolveCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "resolve",
+		Short: "Resolve an active incident and record MTTR",
+		RunE:  runResolve,
+	}
+	cmd.Flags().String("id", "", "Incident ID to resolve (required)")
+	cmd.Flags().String("resolution", "", "Brief description of how the incident was resolved")
+	_ = cmd.MarkFlagRequired("id")
+	return cmd
 }
 
 func runResolve(cmd *cobra.Command, args []string) error {
 	id, _ := cmd.Flags().GetString("id")
 	resolution, _ := cmd.Flags().GetString("resolution")
 
-	pdClient := pagerduty.NewClient(viper.GetString("PAGERDUTY_API_KEY"))
-	slackClient := slack.NewClient(viper.GetString("SLACK_BOT_TOKEN"))
+	pdClient := newPagerDutyClient(viper.GetString("PAGERDUTY_API_KEY"))
+	slackClient := newSlackClient(viper.GetString("SLACK_BOT_TOKEN"))
 	t := timer.NewMTTRTimer()
 
 	t.Load(id)
