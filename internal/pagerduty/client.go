@@ -1,6 +1,7 @@
 package pagerduty
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -38,7 +39,7 @@ func NewClient(apiKey string) *Client {
 
 func (c *Client) CreateIncident(input CreateIncidentInput) (*Incident, error) {
 	urgency := severityToUrgency(input.Severity)
-	resp, err := c.client.CreateIncident("incident-cli", &pd.CreateIncidentOptions{
+	resp, err := c.client.CreateIncidentWithContext(context.Background(), "incident-cli", &pd.CreateIncidentOptions{
 		Title: input.Title,
 		Service: &pd.APIReference{
 			ID:   input.ServiceID,
@@ -63,7 +64,7 @@ func (c *Client) CreateIncident(input CreateIncidentInput) (*Incident, error) {
 }
 
 func (c *Client) ResolveIncident(id, resolution string) error {
-	_, err := c.client.ManageIncidents("incident-cli", []pd.ManageIncidentsOptions{
+	_, err := c.client.ManageIncidentsWithContext(context.Background(), "incident-cli", []pd.ManageIncidentsOptions{
 		{
 			ID:     id,
 			Status: "resolved",
@@ -73,7 +74,7 @@ func (c *Client) ResolveIncident(id, resolution string) error {
 }
 
 func (c *Client) GetIncident(id string) (*Incident, error) {
-	resp, err := c.client.GetIncident(id)
+	resp, err := c.client.GetIncidentWithContext(context.Background(), id)
 	if err != nil {
 		return nil, fmt.Errorf("PagerDuty API error: %w", err)
 	}
@@ -97,7 +98,7 @@ func (c *Client) GetIncident(id string) (*Incident, error) {
 // first. The timeline package turns these into candidate events, since a burst
 // of related alerts just before a page is often the first visible symptom.
 func (c *Client) ListRecentIncidents(since time.Time) ([]Incident, error) {
-	resp, err := c.client.ListIncidents(pd.ListIncidentsOptions{
+	resp, err := c.client.ListIncidentsWithContext(context.Background(), pd.ListIncidentsOptions{
 		Since:    since.UTC().Format(time.RFC3339),
 		SortBy:   "created_at:desc",
 		Limit:    100,
