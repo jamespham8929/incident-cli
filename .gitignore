@@ -10,3 +10,4 @@ incident-cli
 vendor/
 .incident.yaml
 postmortems/
+.DS_Store
