@@ -1,0 +1,22 @@
+
+Timeline for checkout incident (detected 2026-01-15 12:00:00)
+  1h10m before   10:50:00  config_change/checkout  checkout: raise DB connection pool to 200
+  40m00s before  11:20:00  feature_flag/catalog    catalog: enabled new ranking experiment
+  30m00s before  11:30:00  scaling/billing         billing scaled 6 to 3 replicas (off-peak)
+  20m00s before  11:40:00  deploy/search           search v2207: bump elasticsearch client
+  8m00s before   11:52:00  deploy/checkout         checkout v4821: refactor payment retry logic
+  2m00s before   11:58:00  alert/auth              auth latency p99 above 800ms
+
+Most likely causes:
+  1. [0.62] checkout v4821: refactor payment retry logic  (deploy, checkout, 8m00s before)
+       time 0.69 x relevance 0.90  (service 1.00, type 0.90, magnitude 0.70)
+       why service 1.00: same service
+  2. [0.50] auth latency p99 above 800ms  (alert, auth, 2m00s before)
+       time 0.91 x relevance 0.55  (service 0.60, type 0.50, magnitude 0.50)
+       why service 0.60: checkout depends on auth, 1 hop away
+  3. [0.17] search v2207: bump elasticsearch client  (deploy, search, 20m00s before)
+       time 0.40 x relevance 0.44  (service 0.10, type 0.90, magnitude 0.50)
+       why service 0.10: no path in the graph
+  4. [0.14] billing scaled 6 to 3 replicas (off-peak)  (scaling, billing, 30m00s before)
+       time 0.25 x relevance 0.55  (service 0.60, type 0.60, magnitude 0.40)
+       why service 0.60: checkout depends on billing, 1 hop away
