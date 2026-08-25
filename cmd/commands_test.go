@@ -251,6 +251,47 @@ func TestInvestigateBadAt(t *testing.T) {
 	require.Contains(t, err.Error(), "invalid --at")
 }
 
+func TestInvestigateRejectsABadRepoSpec(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	_, err := executeCommand(t,
+		"investigate",
+		"--service", "checkout",
+		"--at", "2026-01-15T12:00:00Z",
+		"--github-repo", "checkout",
+	)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "invalid --github-repo")
+}
+
+// A graph that cannot be read has to fail the run. Falling back to exact-match
+// would silently produce a different ranking than the one that was asked for.
+func TestInvestigateRejectsAMissingGraph(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	_, err := executeCommand(t,
+		"investigate",
+		"--service", "checkout",
+		"--at", "2026-01-15T12:00:00Z",
+		"--events", filepath.Join("..", "testdata", "incident-example.json"),
+		"--graph", filepath.Join(t.TempDir(), "nope.json"),
+	)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "loading dependency graph")
+}
+
+func TestInvestigateWithGraphExplainsUpstreamServices(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	out, err := executeCommand(t,
+		"investigate",
+		"--service", "checkout",
+		"--at", "2026-01-15T12:00:00Z",
+		"--events", filepath.Join("..", "testdata", "incident-example.json"),
+		"--graph", filepath.Join("..", "testdata", "service-dependencies.json"),
+		"--top", "2",
+	)
+	require.NoError(t, err)
+	require.Contains(t, out, "checkout depends on auth, 1 hop away")
+}
+
 func TestPostmortemToFile(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
