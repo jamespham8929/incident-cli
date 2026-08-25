@@ -4,7 +4,8 @@ Date: 2025-05-12
 
 ## Status
 
-Accepted
+Accepted. The service-relevance factor described below as an exact match is
+extended by [ADR 0002](0002-dependency-graph-relevance.md).
 
 ## Context
 
