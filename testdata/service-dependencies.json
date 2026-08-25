@@ -1,0 +1,8 @@
+{
+  "web": ["checkout", "search", "catalog"],
+  "checkout": ["auth", "payments", "billing"],
+  "payments": ["ledger", "auth"],
+  "billing": ["ledger"],
+  "search": ["catalog"],
+  "catalog": ["inventory"]
+}

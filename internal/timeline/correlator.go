@@ -16,6 +16,14 @@ type ServiceGraph interface {
 	Relation(eventService, incidentService string) float64
 }
 
+// RelationExplainer is an optional companion to ServiceGraph. A graph that can
+// say why two services are related gets that reason printed in the score
+// breakdown, which is the difference between "0.60" and "checkout depends on
+// auth, 1 hop away".
+type RelationExplainer interface {
+	Explain(eventService, incidentService string) string
+}
+
 type sameServiceGraph struct{}
 
 func (sameServiceGraph) Relation(eventService, incidentService string) float64 {
@@ -26,6 +34,17 @@ func (sameServiceGraph) Relation(eventService, incidentService string) float64 {
 		return 0.3 // unknown service, mild relevance rather than zero
 	default:
 		return 0.1
+	}
+}
+
+func (sameServiceGraph) Explain(eventService, incidentService string) string {
+	switch {
+	case eventService == incidentService && eventService != "":
+		return "same service"
+	case eventService == "":
+		return "no service on event"
+	default:
+		return "different service, no graph loaded"
 	}
 }
 
@@ -70,6 +89,9 @@ type ScoreComponents struct {
 	TypePrior float64 // base rate for this event source in [0,1]
 	Magnitude float64 // normalized signal strength in [0,1]
 	Relevance float64 // weighted blend of service/type/magnitude before time gating
+	// ServiceRelation says in words why Service scored what it did, when the
+	// graph can explain itself. Empty otherwise.
+	ServiceRelation string
 }
 
 // Candidate is a scored possible cause.
@@ -82,12 +104,13 @@ type Candidate struct {
 
 // Correlator scores and ranks candidate events against an incident.
 type Correlator struct {
-	cfg      Config
-	priors   map[EventSource]float64
-	graph    ServiceGraph
-	wService float64
-	wType    float64
-	wMag     float64
+	cfg       Config
+	priors    map[EventSource]float64
+	graph     ServiceGraph
+	explainer RelationExplainer
+	wService  float64
+	wType     float64
+	wMag      float64
 }
 
 // NewCorrelator builds a correlator, filling defaults and normalizing weights.
@@ -104,13 +127,15 @@ func NewCorrelator(cfg Config) *Correlator {
 	if sum <= 0 {
 		sum = 1
 	}
+	explainer, _ := graph.(RelationExplainer)
 	return &Correlator{
-		cfg:      cfg,
-		priors:   priors,
-		graph:    graph,
-		wService: cfg.ServiceWeight / sum,
-		wType:    cfg.TypePriorWeight / sum,
-		wMag:     cfg.MagnitudeWeight / sum,
+		cfg:       cfg,
+		priors:    priors,
+		graph:     graph,
+		explainer: explainer,
+		wService:  cfg.ServiceWeight / sum,
+		wType:     cfg.TypePriorWeight / sum,
+		wMag:      cfg.MagnitudeWeight / sum,
 	}
 }
 
@@ -150,12 +175,17 @@ func (c *Correlator) score(inc Incident, e Event, lead time.Duration) ScoreCompo
 	prior := c.priors[e.Source]
 	mag := magnitudeOrNeutral(e.Magnitude)
 	relevance := c.wService*service + c.wType*prior + c.wMag*mag
+	var relation string
+	if c.explainer != nil {
+		relation = c.explainer.Explain(e.Service, inc.Service)
+	}
 	return ScoreComponents{
-		Temporal:  temporal,
-		Service:   service,
-		TypePrior: prior,
-		Magnitude: mag,
-		Relevance: relevance,
+		Temporal:        temporal,
+		Service:         service,
+		TypePrior:       prior,
+		Magnitude:       mag,
+		Relevance:       relevance,
+		ServiceRelation: relation,
 	}
 }
 
