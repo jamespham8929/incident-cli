@@ -60,5 +60,9 @@ var defaultTypePriors = map[EventSource]float64{
 	SourceInfra:        0.70,
 	SourceScaling:      0.60,
 	SourceAlert:        0.50,
-	SourceExternal:     0.30,
+	// A metric shift is often the cause seen from the side, like a saturated
+	// pool or a slow upstream, and sometimes just another symptom. It ranks a
+	// little above a related alert and below any deliberate change.
+	SourceMetricAnomaly: 0.55,
+	SourceExternal:      0.30,
 }

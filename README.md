@@ -142,6 +142,32 @@ and what the graph uses. Deploy magnitude comes from the diff between consecutiv
 deployments, so a 14-file change outranks a one-line config bump. Turn that off
 with `--github-size-deploys=false` if the extra API call per deploy is a problem.
 
+### Finding what nobody recorded
+
+Some causes are never deployed or flagged. A connection pool fills up, an
+upstream gets slow, pods start restarting. Point the investigator at Prometheus
+and a file of metrics to watch, and a sustained shift in any of them becomes a
+candidate cause at the moment it started:
+
+```bash
+./incident investigate \
+  --service checkout \
+  --prometheus-url http://prometheus:9090 \
+  --anomaly-queries testdata/anomaly-queries.json \
+  --graph deps.json
+```
+
+```
+  12m00s before  09:48:00  metric_anomaly/payments-db  db_pool_wait_seconds rose to 0.9 from a baseline of 0.01
+```
+
+The baseline is the 6 hours before the window, scored with the median and the
+median absolute deviation, so an old spike does not hide a new shift. A shift
+has to hold for three minutes. Watch saturation and dependency signals, not the
+SLI that paged, because a shift in the paging SLI is the incident itself.
+[ADR 0004](docs/adr/0004-metric-anomalies-as-candidate-causes.md) covers the
+detector and the prior.
+
 ### The rest of the lifecycle
 
 ```bash
@@ -171,6 +197,8 @@ Shipped sources:
   service, and sizes each deploy from its diff.
   [ADR 0003](docs/adr/0003-reading-deploys-from-github.md) covers why deployments
   rather than workflow runs.
+- **PrometheusAnomalySource** runs range queries and turns sustained metric
+  shifts into `metric_anomaly` events.
 
 Argo CD and Spinnaker adapters slot in behind the same interface.
 

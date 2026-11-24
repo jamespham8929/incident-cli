@@ -1,0 +1,20 @@
+[
+  {
+    "name": "db_pool_wait_seconds",
+    "query": "sum by (service) (rate(db_pool_wait_seconds_sum[5m])) / sum by (service) (rate(db_pool_wait_seconds_count[5m]))"
+  },
+  {
+    "name": "upstream_p99_latency",
+    "query": "histogram_quantile(0.99, sum by (service, le) (rate(http_request_duration_seconds_bucket[5m])))"
+  },
+  {
+    "name": "pod_restarts",
+    "query": "sum by (namespace) (increase(kube_pod_container_status_restarts_total[5m]))",
+    "service_label": "namespace"
+  },
+  {
+    "name": "request_throughput",
+    "query": "sum by (service) (rate(http_requests_total[5m]))",
+    "direction": "down"
+  }
+]

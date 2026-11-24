@@ -8,6 +8,7 @@ import (
 
 	"github.com/jamespham/incident-cli/internal/github"
 	"github.com/jamespham/incident-cli/internal/pagerduty"
+	"github.com/jamespham/incident-cli/internal/prometheus"
 	"github.com/jamespham/incident-cli/internal/timeline"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -31,6 +32,10 @@ and ranks which events most likely caused the incident.`,
 	cmd.Flags().String("github-env", "production", "Deployment environment to read; empty for all")
 	cmd.Flags().Bool("github-size-deploys", true, "Ask GitHub how much changed between deploys, for the magnitude signal")
 	cmd.Flags().String("graph", "", "Service dependency graph JSON, so upstream changes rank as plausible causes")
+	cmd.Flags().String("prometheus-url", "", "Prometheus to read metric anomalies from")
+	cmd.Flags().String("anomaly-queries", "", "JSON file of metrics to watch for sustained shifts (needs --prometheus-url)")
+	cmd.Flags().Duration("anomaly-baseline", timeline.DefaultAnomalyConfig().Baseline, "History before the window that counts as normal")
+	cmd.Flags().Float64("anomaly-threshold", timeline.DefaultAnomalyConfig().Threshold, "Robust z-score a shift must pass")
 	cmd.Flags().Int("top", 3, "Number of candidate causes to highlight")
 	_ = cmd.MarkFlagRequired("service")
 	return cmd
@@ -46,6 +51,10 @@ func runInvestigate(cmd *cobra.Command, args []string) error {
 	ghEnv, _ := cmd.Flags().GetString("github-env")
 	ghSize, _ := cmd.Flags().GetBool("github-size-deploys")
 	graphPath, _ := cmd.Flags().GetString("graph")
+	promURL, _ := cmd.Flags().GetString("prometheus-url")
+	anomalyPath, _ := cmd.Flags().GetString("anomaly-queries")
+	anomalyBaseline, _ := cmd.Flags().GetDuration("anomaly-baseline")
+	anomalyThreshold, _ := cmd.Flags().GetFloat64("anomaly-threshold")
 	top, _ := cmd.Flags().GetInt("top")
 
 	at, err := parseAt(atStr)
@@ -69,8 +78,22 @@ func runInvestigate(cmd *cobra.Command, args []string) error {
 		sources = append(sources, timeline.NewGitHubDeploymentSource(
 			github.NewClient(viper.GetString("GITHUB_TOKEN")), mappings, ghEnv, ghSize))
 	}
+	if anomalyPath != "" || promURL != "" {
+		if anomalyPath == "" || promURL == "" {
+			return fmt.Errorf("--prometheus-url and --anomaly-queries go together")
+		}
+		queries, err := timeline.LoadAnomalyQueries(anomalyPath)
+		if err != nil {
+			return fmt.Errorf("loading anomaly queries: %w", err)
+		}
+		acfg := timeline.DefaultAnomalyConfig()
+		acfg.Baseline = anomalyBaseline
+		acfg.Threshold = anomalyThreshold
+		sources = append(sources, timeline.NewPrometheusAnomalySource(
+			prometheus.NewClient(promURL), queries, acfg))
+	}
 	if len(sources) == 0 {
-		return fmt.Errorf("no event sources: pass --events <file>, --github-repo <owner/repo>, and/or --pagerduty")
+		return fmt.Errorf("no event sources: pass --events <file>, --github-repo <owner/repo>, --prometheus-url with --anomaly-queries, and/or --pagerduty")
 	}
 
 	cfg := timeline.DefaultConfig()

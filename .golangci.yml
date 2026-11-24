@@ -1,18 +1,35 @@
 # Pinned lint configuration so local runs and CI agree on the enabled set.
-# Run with the same version the CI workflow pins (golangci-lint v1.62.2).
-run:
-  timeout: 5m
-
+# Run with the same version the CI workflow pins (golangci-lint v2.15.0).
+# gosimple is part of staticcheck in v2, and gofmt and goimports are formatters.
+version: "2"
 linters:
-  disable-all: true
+  default: none
   enable:
     - errcheck
     - govet
     - ineffassign
+    - misspell
     - staticcheck
+    - unconvert
     - unused
-    - gosimple
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
     - gofmt
     - goimports
-    - misspell
-    - unconvert
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
