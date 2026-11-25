@@ -179,7 +179,10 @@ func buildTrial(rng *rand.Rand, services []string, noise int, upstreamShare floa
 		Service:   causeService,
 		Title:     "true cause",
 		Timestamp: base.Add(-time.Duration(1+rng.Intn(20)) * time.Minute),
-		Magnitude: 0.4 + rng.Float64()*0.6,
+		// The conversion stops arm64 from fusing this into one multiply-add.
+		// A fused result can differ in the last bit. Then the exported
+		// scenarios would differ between a Mac and CI.
+		Magnitude: 0.4 + float64(rng.Float64()*0.6),
 	}}
 
 	noiseSources := []timeline.EventSource{
