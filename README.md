@@ -168,6 +168,40 @@ SLI that paged, because a shift in the paging SLI is the incident itself.
 [ADR 0004](docs/adr/0004-metric-anomalies-as-candidate-causes.md) covers the
 detector and the prior.
 
+### Ruling out chaos first
+
+A chaos experiment is a fault someone injected on purpose. When one pages a
+responder, the investigation should say so at once. chaos-operator keeps a
+record of each run in the experiment's status, and the investigator reads them
+as `chaos` events:
+
+```bash
+./incident investigate --service checkout --chaos-from-cluster --kube-context kind-platform
+./incident investigate --service checkout --chaos-runs saved-experiments.json
+```
+
+`--chaos-from-cluster` runs `kubectl get chaosexperiments -A -o json`, so it
+uses whatever contexts and auth plugins kubectl already has. `--chaos-runs`
+reads a saved copy of that output. Runs that never touched a pod are skipped. A
+chaos run has the highest type prior, but timing still counts. A deploy two
+minutes before the page can still outrank a chaos run from twenty minutes
+before. [ADR 0005](docs/adr/0005-chaos-runs-as-candidate-causes.md) explains the
+choices.
+
+### Output for other tools
+
+`--output json` prints the timeline and the ranked causes as one JSON document.
+platform-mcp reads it, and so can any script. `--top 0` keeps every candidate.
+
+```bash
+./incident investigate --service checkout --events testdata/incident-example.json \
+  --at 2026-01-15T12:00:00Z --output json --top 0
+```
+
+Each cause carries its score parts and points at an event by ID. The shape is
+versioned as `incident-cli/investigate/v1`. [docs/investigate-json.md](docs/investigate-json.md)
+lists the fields and the rules for changing them, and a golden file pins it.
+
 ### The rest of the lifecycle
 
 ```bash
@@ -190,15 +224,17 @@ type Source interface {
 
 Shipped sources:
 
-- **FileSource** reads a JSON array of events. Use it to replay a recorded
+- `FileSource` reads a JSON array of events. Use it to replay a recorded
   incident, or for event types nothing else exports.
-- **PagerDutySource** turns recent PagerDuty incidents into alert events.
-- **GitHubDeploymentSource** reads the GitHub Deployments API, one repo per
+- `PagerDutySource` turns recent PagerDuty incidents into alert events.
+- `GitHubDeploymentSource` reads the GitHub Deployments API, one repo per
   service, and sizes each deploy from its diff.
   [ADR 0003](docs/adr/0003-reading-deploys-from-github.md) covers why deployments
   rather than workflow runs.
-- **PrometheusAnomalySource** runs range queries and turns sustained metric
+- `PrometheusAnomalySource` runs range queries and turns sustained metric
   shifts into `metric_anomaly` events.
+- `ChaosSource` reads chaos-operator run records and turns each run that
+  injected a fault into a `chaos` event.
 
 Argo CD and Spinnaker adapters slot in behind the same interface.
 
@@ -242,6 +278,18 @@ at 0.70 they are 0.703 and 0.844.
 
 Runs are deterministic for a given `-seed`, so the numbers reproduce. Raise
 `-noise` to watch ranking degrade as the hour gets busier.
+
+`-export DIR` also writes the trials as scenario files for platform-mcp's
+offline eval. The benchmark names the planted cause `TRUE`, which the
+correlator never reads but a language model would. So the export gives every
+event a random ID and a title drawn the same way for the cause and the noise,
+and it shuffles the order. Each file records where the correlator ranked the
+cause on exactly those events. An eval that runs the correlator through
+platform-mcp has to reproduce those ranks.
+
+```bash
+go run ./benchmarks/correlator -trials 100 -export ../platform-mcp/testdata/synthetic
+```
 
 ## Tests
 

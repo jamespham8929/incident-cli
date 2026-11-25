@@ -1,0 +1,223 @@
+{
+  "schema": "incident-cli/investigate/v1",
+  "incident": {
+    "service": "checkout",
+    "detected_at": "2026-01-15T12:00:00Z"
+  },
+  "window_seconds": 7200,
+  "sources": [
+    "file:../testdata/incident-example.json",
+    "chaos-runs"
+  ],
+  "events": [
+    {
+      "id": "cfg-checkout-991",
+      "source": "config_change",
+      "service": "checkout",
+      "title": "checkout: raise DB connection pool to 200",
+      "timestamp": "2026-01-15T10:50:00Z",
+      "offset_seconds": -4200,
+      "magnitude": 0.6
+    },
+    {
+      "id": "flag-catalog-1",
+      "source": "feature_flag",
+      "service": "catalog",
+      "title": "catalog: enabled new ranking experiment",
+      "timestamp": "2026-01-15T11:20:00Z",
+      "offset_seconds": -2400,
+      "magnitude": 0.3
+    },
+    {
+      "id": "scale-billing-1",
+      "source": "scaling",
+      "service": "billing",
+      "title": "billing scaled 6 to 3 replicas (off-peak)",
+      "timestamp": "2026-01-15T11:30:00Z",
+      "offset_seconds": -1800,
+      "magnitude": 0.4
+    },
+    {
+      "id": "dep-search-2207",
+      "source": "deploy",
+      "service": "search",
+      "title": "search v2207: bump elasticsearch client",
+      "timestamp": "2026-01-15T11:40:00Z",
+      "offset_seconds": -1200,
+      "magnitude": 0.5
+    },
+    {
+      "id": "payments/checkout-nightly/20260115T114501Z",
+      "source": "chaos",
+      "service": "checkout",
+      "title": "chaos experiment checkout-nightly: pod-failure on checkout, completed",
+      "timestamp": "2026-01-15T11:45:01Z",
+      "offset_seconds": -899,
+      "magnitude": 0.6,
+      "metadata": {
+        "experiment": "checkout-nightly",
+        "finished_at": "2026-01-15T11:46:30Z",
+        "namespace": "payments",
+        "outcome": "completed",
+        "pods_affected": "2",
+        "trigger": "schedule",
+        "type": "pod-failure"
+      }
+    },
+    {
+      "id": "identity/auth-latency/20260115T115000Z",
+      "source": "chaos",
+      "service": "auth",
+      "title": "chaos experiment auth-latency: network-latency on auth, aborted",
+      "timestamp": "2026-01-15T11:50:00Z",
+      "offset_seconds": -600,
+      "magnitude": 1,
+      "metadata": {
+        "experiment": "auth-latency",
+        "finished_at": "2026-01-15T11:51:15Z",
+        "namespace": "identity",
+        "outcome": "aborted",
+        "pods_affected": "0",
+        "trigger": "create",
+        "type": "network-latency"
+      }
+    },
+    {
+      "id": "dep-checkout-4821",
+      "source": "deploy",
+      "service": "checkout",
+      "title": "checkout v4821: refactor payment retry logic",
+      "timestamp": "2026-01-15T11:52:00Z",
+      "offset_seconds": -480,
+      "magnitude": 0.7,
+      "metadata": {
+        "commit": "a1b2c3d",
+        "files_changed": "14"
+      }
+    },
+    {
+      "id": "alert-auth-1",
+      "source": "alert",
+      "service": "auth",
+      "title": "auth latency p99 above 800ms",
+      "timestamp": "2026-01-15T11:58:00Z",
+      "offset_seconds": -120,
+      "magnitude": 0.5
+    }
+  ],
+  "causes": [
+    {
+      "rank": 1,
+      "event_id": "dep-checkout-4821",
+      "score": 0.6184,
+      "lead_time_seconds": 480,
+      "components": {
+        "temporal": 0.691,
+        "service": 1,
+        "type_prior": 0.9,
+        "magnitude": 0.7,
+        "relevance": 0.895,
+        "service_relation": "same service"
+      }
+    },
+    {
+      "rank": 2,
+      "event_id": "identity/auth-latency/20260115T115000Z",
+      "score": 0.5071,
+      "lead_time_seconds": 600,
+      "components": {
+        "temporal": 0.63,
+        "service": 0.6,
+        "type_prior": 0.95,
+        "magnitude": 1,
+        "relevance": 0.805,
+        "service_relation": "checkout depends on auth, 1 hop away"
+      }
+    },
+    {
+      "rank": 3,
+      "event_id": "alert-auth-1",
+      "score": 0.4969,
+      "lead_time_seconds": 120,
+      "components": {
+        "temporal": 0.9117,
+        "service": 0.6,
+        "type_prior": 0.5,
+        "magnitude": 0.5,
+        "relevance": 0.545,
+        "service_relation": "checkout depends on auth, 1 hop away"
+      }
+    },
+    {
+      "rank": 4,
+      "event_id": "payments/checkout-nightly/20260115T114501Z",
+      "score": 0.4428,
+      "lead_time_seconds": 899,
+      "components": {
+        "temporal": 0.5004,
+        "service": 1,
+        "type_prior": 0.95,
+        "magnitude": 0.6,
+        "relevance": 0.885,
+        "service_relation": "same service"
+      }
+    },
+    {
+      "rank": 5,
+      "event_id": "dep-search-2207",
+      "score": 0.1746,
+      "lead_time_seconds": 1200,
+      "components": {
+        "temporal": 0.3969,
+        "service": 0.1,
+        "type_prior": 0.9,
+        "magnitude": 0.5,
+        "relevance": 0.44,
+        "service_relation": "no path in the graph"
+      }
+    },
+    {
+      "rank": 6,
+      "event_id": "scale-billing-1",
+      "score": 0.1375,
+      "lead_time_seconds": 1800,
+      "components": {
+        "temporal": 0.25,
+        "service": 0.6,
+        "type_prior": 0.6,
+        "magnitude": 0.4,
+        "relevance": 0.55,
+        "service_relation": "checkout depends on billing, 1 hop away"
+      }
+    },
+    {
+      "rank": 7,
+      "event_id": "flag-catalog-1",
+      "score": 0.0567,
+      "lead_time_seconds": 2400,
+      "components": {
+        "temporal": 0.1575,
+        "service": 0.1,
+        "type_prior": 0.8,
+        "magnitude": 0.3,
+        "relevance": 0.36,
+        "service_relation": "no path in the graph"
+      }
+    },
+    {
+      "rank": 8,
+      "event_id": "cfg-checkout-991",
+      "score": 0.0337,
+      "lead_time_seconds": 4200,
+      "components": {
+        "temporal": 0.0394,
+        "service": 1,
+        "type_prior": 0.85,
+        "magnitude": 0.6,
+        "relevance": 0.855,
+        "service_relation": "same service"
+      }
+    }
+  ],
+  "total_candidates": 8
+}

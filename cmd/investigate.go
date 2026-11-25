@@ -36,7 +36,11 @@ and ranks which events most likely caused the incident.`,
 	cmd.Flags().String("anomaly-queries", "", "JSON file of metrics to watch for sustained shifts (needs --prometheus-url)")
 	cmd.Flags().Duration("anomaly-baseline", timeline.DefaultAnomalyConfig().Baseline, "History before the window that counts as normal")
 	cmd.Flags().Float64("anomaly-threshold", timeline.DefaultAnomalyConfig().Threshold, "Robust z-score a shift must pass")
-	cmd.Flags().Int("top", 3, "Number of candidate causes to highlight")
+	cmd.Flags().String("chaos-runs", "", "Saved `kubectl get chaosexperiments -A -o json` output to read chaos runs from")
+	cmd.Flags().Bool("chaos-from-cluster", false, "Read chaos runs from the cluster with kubectl")
+	cmd.Flags().String("kube-context", "", "kubeconfig context for --chaos-from-cluster; empty for the current one")
+	cmd.Flags().Int("top", 3, "Number of candidate causes to highlight; 0 for all")
+	cmd.Flags().String("output", "text", "Output format: text or json")
 	_ = cmd.MarkFlagRequired("service")
 	return cmd
 }
@@ -55,7 +59,21 @@ func runInvestigate(cmd *cobra.Command, args []string) error {
 	anomalyPath, _ := cmd.Flags().GetString("anomaly-queries")
 	anomalyBaseline, _ := cmd.Flags().GetDuration("anomaly-baseline")
 	anomalyThreshold, _ := cmd.Flags().GetFloat64("anomaly-threshold")
+	chaosPath, _ := cmd.Flags().GetString("chaos-runs")
+	chaosCluster, _ := cmd.Flags().GetBool("chaos-from-cluster")
+	kubeContext, _ := cmd.Flags().GetString("kube-context")
 	top, _ := cmd.Flags().GetInt("top")
+	output, _ := cmd.Flags().GetString("output")
+
+	if output != "text" && output != "json" {
+		return fmt.Errorf("--output must be text or json, not %q", output)
+	}
+	if top < 0 {
+		return fmt.Errorf("--top must be 0 or more")
+	}
+	if chaosPath != "" && chaosCluster {
+		return fmt.Errorf("--chaos-runs and --chaos-from-cluster are two ways to get the same data; pass one")
+	}
 
 	at, err := parseAt(atStr)
 	if err != nil {
@@ -92,8 +110,14 @@ func runInvestigate(cmd *cobra.Command, args []string) error {
 		sources = append(sources, timeline.NewPrometheusAnomalySource(
 			prometheus.NewClient(promURL), queries, acfg))
 	}
+	if chaosPath != "" {
+		sources = append(sources, timeline.NewChaosSource(timeline.ChaosFile{Path: chaosPath}))
+	}
+	if chaosCluster {
+		sources = append(sources, timeline.NewChaosSource(timeline.ChaosKubectl{Context: kubeContext}))
+	}
 	if len(sources) == 0 {
-		return fmt.Errorf("no event sources: pass --events <file>, --github-repo <owner/repo>, --prometheus-url with --anomaly-queries, and/or --pagerduty")
+		return fmt.Errorf("no event sources: pass --events <file>, --github-repo <owner/repo>, --prometheus-url with --anomaly-queries, --chaos-runs <file>, --chaos-from-cluster, and/or --pagerduty")
 	}
 
 	cfg := timeline.DefaultConfig()
@@ -113,7 +137,13 @@ func runInvestigate(cmd *cobra.Command, args []string) error {
 	inc := timeline.Incident{ID: "investigation", Service: service, DetectedAt: at}
 	ranked := timeline.NewCorrelator(cfg).Rank(inc, events)
 
+	if output == "json" {
+		return writeInvestigationJSON(cmd.OutOrStdout(), inc, window, sources, events, ranked, top)
+	}
 	printTimeline(cmd.OutOrStdout(), inc, events)
+	if top == 0 {
+		top = len(ranked)
+	}
 	printCauses(cmd.OutOrStdout(), ranked, top)
 	return nil
 }

@@ -13,12 +13,16 @@
 // Run:
 //
 //	go run ./benchmarks/correlator -trials 2000 -noise 12 -upstream 0.35
+//
+// With -export DIR it also writes the trials as scenario files, which
+// platform-mcp's offline eval replays against an investigator. See export.go.
 package main
 
 import (
 	"flag"
 	"fmt"
 	"math/rand"
+	"os"
 	"sort"
 	"time"
 
@@ -84,6 +88,7 @@ func main() {
 		"relevance multiplier per hop toward a dependency")
 	downstreamDecay := flag.Float64("downstream-decay", timeline.DefaultGraphConfig().DownstreamDecay,
 		"relevance multiplier per hop toward a consumer")
+	exportDir := flag.String("export", "", "also write the trials as scenario files for platform-mcp's eval, into this directory")
 	flag.Parse()
 
 	rng := rand.New(rand.NewSource(*seed))
@@ -104,8 +109,10 @@ func main() {
 		exactUpstream, graphUpstream result
 	)
 
+	var built []trial
 	for i := 0; i < *trials; i++ {
 		tr := buildTrial(rng, services, *noise, *upstreamShare)
+		built = append(built, tr)
 
 		exactRank := rankOfTrue(exact.Rank(tr.incident, tr.events))
 		graphRank := rankOfTrue(graphed.Rank(tr.incident, tr.events))
@@ -119,6 +126,14 @@ func main() {
 			exactSame.record(exactRank)
 			graphSame.record(graphRank)
 		}
+	}
+
+	if *exportDir != "" {
+		if err := exportScenarios(*exportDir, built, *seed, *noise, *upstreamShare, exact, graphed); err != nil {
+			fmt.Fprintln(os.Stderr, "export failed:", err)
+			os.Exit(1)
+		}
+		fmt.Printf("wrote %d scenarios to %s\n", len(built), *exportDir)
 	}
 
 	fmt.Printf("\nsynthetic incidents: %d, noise events each: %d, upstream causes: %.0f%%, seed: %d\n",

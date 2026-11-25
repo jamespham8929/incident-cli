@@ -78,3 +78,36 @@ func TestGoldenInvestigateNoCandidates(t *testing.T) {
 	require.NoError(t, err)
 	assertGolden(t, "investigate-empty.txt", out)
 }
+
+// The JSON output is a contract with platform-mcp. A diff here is a change to
+// that contract, so it should be as visible in review as a change to the text.
+func TestGoldenInvestigateJSON(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	out, err := executeCommand(t,
+		"investigate",
+		"--service", "checkout",
+		"--at", "2026-01-15T12:00:00Z",
+		"--window", "2h",
+		"--events", filepath.Join("..", "testdata", "incident-example.json"),
+		"--chaos-runs", filepath.Join("..", "testdata", "chaos-experiments.json"),
+		"--graph", filepath.Join("..", "testdata", "service-dependencies.json"),
+		"--top", "0",
+		"--output", "json",
+	)
+	require.NoError(t, err)
+	assertGolden(t, "investigate.json", out)
+}
+
+func TestGoldenInvestigateJSONEmpty(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	out, err := executeCommand(t,
+		"investigate",
+		"--service", "checkout",
+		"--at", "2026-01-15T09:00:00Z",
+		"--window", "30m",
+		"--events", filepath.Join("..", "testdata", "incident-example.json"),
+		"--output", "json",
+	)
+	require.NoError(t, err)
+	assertGolden(t, "investigate-empty.json", out)
+}
