@@ -57,6 +57,11 @@ type componentsJSON struct {
 	Magnitude       float64 `json:"magnitude"`
 	Relevance       float64 `json:"relevance"`
 	ServiceRelation string  `json:"service_relation,omitempty"`
+	// Cascade multiplies the score, and is 1 unless the cascade pass found
+	// the event explained by something else. Added in v1 without a version
+	// bump, because a reader that ignores it still reads the score right.
+	Cascade       float64 `json:"cascade"`
+	CascadeReason string  `json:"cascade_reason,omitempty"`
 }
 
 // round4 keeps scores readable and the golden file stable. Four places is
@@ -116,6 +121,8 @@ func writeInvestigationJSON(
 				Magnitude:       round4(c.Components.Magnitude),
 				Relevance:       round4(c.Components.Relevance),
 				ServiceRelation: c.Components.ServiceRelation,
+				Cascade:         round4(c.Components.Cascade),
+				CascadeReason:   c.Components.CascadeReason,
 			},
 		})
 	}

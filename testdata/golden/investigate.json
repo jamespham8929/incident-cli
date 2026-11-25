@@ -117,7 +117,8 @@
         "type_prior": 0.9,
         "magnitude": 0.7,
         "relevance": 0.895,
-        "service_relation": "same service"
+        "service_relation": "same service",
+        "cascade": 1
       }
     },
     {
@@ -131,7 +132,8 @@
         "type_prior": 0.95,
         "magnitude": 1,
         "relevance": 0.805,
-        "service_relation": "checkout depends on auth, 1 hop away"
+        "service_relation": "checkout depends on auth, 1 hop away",
+        "cascade": 1
       }
     },
     {
@@ -145,7 +147,8 @@
         "type_prior": 0.5,
         "magnitude": 0.5,
         "relevance": 0.545,
-        "service_relation": "checkout depends on auth, 1 hop away"
+        "service_relation": "checkout depends on auth, 1 hop away",
+        "cascade": 1
       }
     },
     {
@@ -159,7 +162,8 @@
         "type_prior": 0.95,
         "magnitude": 0.6,
         "relevance": 0.885,
-        "service_relation": "same service"
+        "service_relation": "same service",
+        "cascade": 1
       }
     },
     {
@@ -173,7 +177,8 @@
         "type_prior": 0.9,
         "magnitude": 0.5,
         "relevance": 0.44,
-        "service_relation": "no path in the graph"
+        "service_relation": "no path in the graph",
+        "cascade": 1
       }
     },
     {
@@ -187,7 +192,8 @@
         "type_prior": 0.6,
         "magnitude": 0.4,
         "relevance": 0.55,
-        "service_relation": "checkout depends on billing, 1 hop away"
+        "service_relation": "checkout depends on billing, 1 hop away",
+        "cascade": 1
       }
     },
     {
@@ -201,7 +207,8 @@
         "type_prior": 0.8,
         "magnitude": 0.3,
         "relevance": 0.36,
-        "service_relation": "no path in the graph"
+        "service_relation": "no path in the graph",
+        "cascade": 1
       }
     },
     {
@@ -215,7 +222,8 @@
         "type_prior": 0.85,
         "magnitude": 0.6,
         "relevance": 0.855,
-        "service_relation": "same service"
+        "service_relation": "same service",
+        "cascade": 1
       }
     }
   ],

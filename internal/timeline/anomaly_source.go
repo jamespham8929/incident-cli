@@ -32,14 +32,26 @@ const (
 )
 
 // AnomalyQuery is one metric to watch. Point these at saturation and
-// dependency signals, not at the SLI that paged. A shift in the paging SLI is
-// the incident itself, not its cause.
+// dependency signals. A shift in the SLI that paged is the incident itself,
+// not its cause. A query file shared by many services will still watch the
+// paged service's SLI, so the correlator's cascade pass treats an anomaly that
+// a broken dependency explains as a symptom. See ADR 0006.
 type AnomalyQuery struct {
 	Name         string    `json:"name"`
 	Query        string    `json:"query"`
 	ServiceLabel string    `json:"service_label,omitempty"`
 	Direction    Direction `json:"direction,omitempty"`
+	// Kind is "health" (the default) for errors, latency or capacity, and
+	// "load" for how much traffic arrives. A load shift does not mean the
+	// service is broken. A failure upstream of it can cut its traffic too.
+	Kind string `json:"kind,omitempty"`
 }
+
+// The kinds of anomaly query.
+const (
+	AnomalyKindHealth = "health"
+	AnomalyKindLoad   = "load"
+)
 
 // AnomalyConfig tunes detection. The defaults suit one-minute resolution.
 type AnomalyConfig struct {
@@ -83,6 +95,11 @@ func LoadAnomalyQueries(path string) ([]AnomalyQuery, error) {
 		case "", DirectionUp, DirectionDown, DirectionBoth:
 		default:
 			return nil, fmt.Errorf("%s: query %q has direction %q, want up, down, or both", path, q.Name, q.Direction)
+		}
+		switch q.Kind {
+		case "", AnomalyKindHealth, AnomalyKindLoad:
+		default:
+			return nil, fmt.Errorf("%s: query %q has kind %q, want health or load", path, q.Name, q.Kind)
 		}
 	}
 	return queries, nil
@@ -235,11 +252,19 @@ func anomalyEvent(q AnomalyQuery, service string, s Shift) Event {
 		Magnitude: magnitude,
 		Metadata: map[string]string{
 			"query":           q.Name,
+			"kind":            anomalyKind(q),
 			"baseline_median": short(s.BaselineMedian),
 			"value":           short(s.Value),
 			"robust_z":        strconv.FormatFloat(s.Z, 'f', 1, 64),
 		},
 	}
+}
+
+func anomalyKind(q AnomalyQuery) string {
+	if q.Kind == AnomalyKindLoad {
+		return AnomalyKindLoad
+	}
+	return AnomalyKindHealth
 }
 
 func short(v float64) string { return strconv.FormatFloat(v, 'g', 3, 64) }

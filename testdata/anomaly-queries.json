@@ -15,6 +15,7 @@
   {
     "name": "request_throughput",
     "query": "sum by (service) (rate(http_requests_total[5m]))",
-    "direction": "down"
+    "direction": "down",
+    "kind": "load"
   }
 ]

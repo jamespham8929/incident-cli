@@ -117,6 +117,12 @@ func LoadDependencyGraph(path string, cfg GraphConfig) (*DependencyGraph, error)
 	return NewDependencyGraph(raw, cfg), nil
 }
 
+// DependsOn returns the services one service calls directly, sorted. The
+// cascade pass walks these edges.
+func (g *DependencyGraph) DependsOn(service string) []string {
+	return append([]string(nil), g.dependsOn[service]...)
+}
+
 // Services returns every service the graph knows about, sorted.
 func (g *DependencyGraph) Services() []string {
 	seen := make(map[string]struct{})

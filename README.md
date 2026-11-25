@@ -166,7 +166,39 @@ median absolute deviation, so an old spike does not hide a new shift. A shift
 has to hold for three minutes. Watch saturation and dependency signals, not the
 SLI that paged, because a shift in the paging SLI is the incident itself.
 [ADR 0004](docs/adr/0004-metric-anomalies-as-candidate-causes.md) covers the
-detector and the prior.
+detector and the prior. Mark a query `"kind": "load"` when it measures traffic,
+because a traffic drop does not mean a service is broken.
+
+### Following a cascade
+
+A failure spreads up the call chain. When inventory slows down, checkout and
+frontend slow down in the same minute, and all three show an anomaly. Ranked
+on their own, the paged service's symptoms win, and the cause loses because it
+is furthest away. A shared query file always watches the paged SLI, because
+any service can page.
+
+With `--graph`, the correlator traces the cascade. It walks from the paged
+service through dependencies that broke no later than their caller. The
+broken service whose own dependencies are fine is where the failure starts.
+Its events get full service relevance. Events that a broken dependency
+explains are scaled down by half, and so are changes that came after their
+service broke. A change that came just before its service broke explains that
+service's anomalies, so it ranks above them.
+
+```
+  1. [0.75] upstream_p99_latency rose to 0.935 from a baseline of 0.00423  (metric_anomaly, inventory, 3m00s before)
+       time 0.87 x relevance 0.86  (service 1.00, type 0.55, magnitude 1.00)
+       why service 1.00: anomalies run from frontend through checkout to inventory, where the failure starts
+  2. [0.38] p99_latency rose to 0.937 from a baseline of 0.00487  (metric_anomaly, frontend, 3m00s before)
+       time 0.87 x relevance 0.86  (service 1.00, type 0.55, magnitude 1.00)
+       why service 1.00: same service
+       scaled by 0.50: explained by anomalies on checkout, which frontend calls
+```
+
+platform-mcp's incident gym found this. On its five recorded incidents, top-1
+went from 0 of 5 to 5 of 5. The rules were written after seeing those five, so
+the next scenarios are the real test.
+[ADR 0006](docs/adr/0006-symptoms-and-cascades.md) has the details.
 
 ### Ruling out chaos first
 

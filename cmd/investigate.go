@@ -210,5 +210,8 @@ func printCauses(out io.Writer, ranked []timeline.Candidate, top int) {
 		if c.Components.ServiceRelation != "" {
 			fmt.Fprintf(out, "       why service %.2f: %s\n", c.Components.Service, c.Components.ServiceRelation)
 		}
+		if c.Components.CascadeReason != "" {
+			fmt.Fprintf(out, "       scaled by %.2f: %s\n", c.Components.Cascade, c.Components.CascadeReason)
+		}
 	}
 }

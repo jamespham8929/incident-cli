@@ -66,6 +66,14 @@ type Config struct {
 	TypePriors map[EventSource]float64
 	// Graph resolves service relevance. Defaults to exact-match.
 	Graph ServiceGraph
+	// ExplainedFactor scales the score of an event the cascade pass explains
+	// away, such as a symptom on the paged service. Zero turns the pass off.
+	// The pass also needs a graph that can list dependencies. See cascade.go.
+	ExplainedFactor float64
+	// CascadeSlack is how much later a dependency may break and still explain
+	// a service. Anomalies come in one-minute steps, so a cascade can look a
+	// step late.
+	CascadeSlack time.Duration
 }
 
 // DefaultConfig returns a sensible starting model. The weights lean on service
@@ -78,6 +86,8 @@ func DefaultConfig() Config {
 		ServiceWeight:   0.45,
 		TypePriorWeight: 0.30,
 		MagnitudeWeight: 0.25,
+		ExplainedFactor: 0.5,
+		CascadeSlack:    time.Minute,
 	}
 }
 
@@ -92,6 +102,10 @@ type ScoreComponents struct {
 	// ServiceRelation says in words why Service scored what it did, when the
 	// graph can explain itself. Empty otherwise.
 	ServiceRelation string
+	// Cascade multiplies the score. It is 1 unless the cascade pass found
+	// the event explained by something else, and CascadeReason says what.
+	Cascade       float64
+	CascadeReason string
 }
 
 // Candidate is a scored possible cause.
@@ -160,6 +174,15 @@ func (c *Correlator) Rank(inc Incident, events []Event) []Candidate {
 			Components: comp,
 		})
 	}
+	if lister, ok := c.graph.(DependencyLister); ok && c.cfg.ExplainedFactor > 0 {
+		in := make([]Event, len(candidates))
+		for i, cand := range candidates {
+			in[i] = cand.Event
+		}
+		if cs := findCascade(inc, in, lister, c.cfg.CascadeSlack); cs != nil {
+			cs.apply(candidates, c.cfg.ExplainedFactor, c.wService, c.wType, c.wMag)
+		}
+	}
 	sort.SliceStable(candidates, func(i, j int) bool {
 		if candidates[i].Score != candidates[j].Score {
 			return candidates[i].Score > candidates[j].Score
@@ -186,6 +209,7 @@ func (c *Correlator) score(inc Incident, e Event, lead time.Duration) ScoreCompo
 		Magnitude:       mag,
 		Relevance:       relevance,
 		ServiceRelation: relation,
+		Cascade:         1,
 	}
 }
 

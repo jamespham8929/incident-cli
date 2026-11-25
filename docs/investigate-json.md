@@ -37,7 +37,8 @@ the exact output for the example incident.
         "type_prior": 0.9,
         "magnitude": 0.7,
         "relevance": 0.895,
-        "service_relation": "same service"
+        "service_relation": "same service",
+        "cascade": 1
       }
     }
   ],
@@ -52,10 +53,15 @@ the exact output for the example incident.
   every candidate. `total_candidates` always counts all of them.
 - `event_id` in a cause is the `id` of an event in the same document. Tools
   use these IDs as evidence, so they must stay stable for the same input.
-- `score` is `temporal` times `relevance`. `relevance` blends `service`,
-  `type_prior` and `magnitude`. ADR 0001 explains the model.
+- `score` is `temporal` times `relevance` times `cascade`. `relevance` blends
+  `service`, `type_prior` and `magnitude`. ADR 0001 explains the model.
+- `cascade` is 1 unless the cascade pass found the event explained by
+  something else, and `cascade_reason` says what. ADR 0006 explains the pass.
+  Both were added inside v1. A reader that ignores them still reads `score`
+  right.
 - Scores are rounded to four decimal places.
-- `metadata` and `service_relation` are left out when they are empty.
+- `metadata`, `service_relation` and `cascade_reason` are left out when they
+  are empty.
 
 ## Changing it
 
