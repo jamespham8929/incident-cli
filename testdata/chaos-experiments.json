@@ -1,0 +1,133 @@
+{
+  "apiVersion": "v1",
+  "kind": "List",
+  "metadata": {
+    "resourceVersion": ""
+  },
+  "items": [
+    {
+      "apiVersion": "chaos.jamespham.io/v1alpha1",
+      "kind": "ChaosExperiment",
+      "metadata": {
+        "name": "auth-latency",
+        "namespace": "identity",
+        "creationTimestamp": "2026-01-10T09:00:00Z",
+        "generation": 1,
+        "uid": "00000000-0000-0000-0000-000000000002"
+      },
+      "spec": {
+        "type": "network-latency",
+        "service": "auth",
+        "selector": {
+          "matchLabels": {
+            "app": "auth"
+          }
+        }
+      },
+      "status": {
+        "runs": [
+          {
+            "id": "identity/auth-latency/20260115T115000Z",
+            "trigger": "create",
+            "type": "network-latency",
+            "service": "auth",
+            "selector": {
+              "app": "auth"
+            },
+            "startedAt": "2026-01-15T11:50:00Z",
+            "finishedAt": "2026-01-15T11:51:15Z",
+            "outcome": "aborted",
+            "injected": true,
+            "podsAffected": 0
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "chaos.jamespham.io/v1alpha1",
+      "kind": "ChaosExperiment",
+      "metadata": {
+        "name": "checkout-nightly",
+        "namespace": "payments",
+        "creationTimestamp": "2026-01-10T09:00:00Z",
+        "generation": 1,
+        "uid": "00000000-0000-0000-0000-000000000006"
+      },
+      "spec": {
+        "type": "pod-failure",
+        "schedule": "0 3 * * *",
+        "selector": {
+          "matchLabels": {
+            "app.kubernetes.io/name": "checkout"
+          }
+        }
+      },
+      "status": {
+        "runs": [
+          {
+            "id": "payments/checkout-nightly/20260115T030004Z",
+            "trigger": "schedule",
+            "type": "pod-failure",
+            "service": "checkout",
+            "selector": {
+              "app.kubernetes.io/name": "checkout"
+            },
+            "startedAt": "2026-01-15T03:00:04Z",
+            "finishedAt": "2026-01-15T03:01:10Z",
+            "outcome": "completed",
+            "injected": true,
+            "podsAffected": 1
+          },
+          {
+            "id": "payments/checkout-nightly/20260115T113002Z",
+            "trigger": "schedule",
+            "type": "pod-failure",
+            "service": "checkout",
+            "selector": {
+              "app.kubernetes.io/name": "checkout"
+            },
+            "startedAt": "2026-01-15T11:30:02Z",
+            "finishedAt": "2026-01-15T11:30:03Z",
+            "outcome": "no_targets",
+            "injected": false,
+            "podsAffected": 0
+          },
+          {
+            "id": "payments/checkout-nightly/20260115T114501Z",
+            "trigger": "schedule",
+            "type": "pod-failure",
+            "service": "checkout",
+            "selector": {
+              "app.kubernetes.io/name": "checkout"
+            },
+            "startedAt": "2026-01-15T11:45:01Z",
+            "finishedAt": "2026-01-15T11:46:30Z",
+            "outcome": "completed",
+            "injected": true,
+            "podsAffected": 2
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "chaos.jamespham.io/v1alpha1",
+      "kind": "ChaosExperiment",
+      "metadata": {
+        "name": "search-cpu",
+        "namespace": "search",
+        "creationTimestamp": "2026-01-10T09:00:00Z",
+        "generation": 1,
+        "uid": "00000000-0000-0000-0000-000000000000"
+      },
+      "spec": {
+        "type": "cpu-stress",
+        "selector": {
+          "matchLabels": {
+            "app": "search"
+          }
+        }
+      },
+      "status": {}
+    }
+  ]
+}

@@ -54,6 +54,9 @@ type Incident struct {
 // rough field intuitions every on-call engineer carries: suspect the last deploy
 // first, then config and flags, and only then the ambient noise.
 var defaultTypePriors = map[EventSource]float64{
+	// A chaos run is a fault injected on purpose. If one hit the affected
+	// service in the window, it is the first thing to rule out.
+	SourceChaos:        0.95,
 	SourceDeploy:       0.90,
 	SourceConfigChange: 0.85,
 	SourceFeatureFlag:  0.80,
